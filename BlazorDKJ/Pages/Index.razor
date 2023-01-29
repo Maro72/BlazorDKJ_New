@@ -1,0 +1,89 @@
+﻿@page "/"
+@using BlazorDKJ.Models
+@using BlazorDKJ.Data
+@using Microsoft.EntityFrameworkCore;
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.DropDowns
+@inject mczeContext mczeContext
+@inject IJmService JmService
+@inject ITowarService TowarService
+
+<PageTitle>Index</PageTitle>
+<h>Towary spis</h>
+
+<div style="width:1250px">
+    <SfGrid DataSource="@Towar" AllowPaging="true"
+            Toolbar="@(new List<string>() { "Add", "Edit", "Update", "Delete", "Cancel" })">
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true">
+        </GridEditSettings>
+        <GridPageSettings PageSize="10"></GridPageSettings>
+        <GridColumns>
+            <GridColumn IsPrimaryKey="true" Field=@nameof(tbtowar.IDTowar) HeaderText="ID"
+                        Width="40px"></GridColumn>
+            <GridColumn Field=@nameof(tbtowar.Nazwa) HeaderText="Nazwa"></GridColumn>
+            <GridColumn Field=@nameof(tbtowar.Indeks) HeaderText=" Indeks"></GridColumn>
+              <GridColumn Field="FJmNavigation.Jm" HeaderText="Jm" Width="140px">
+                <EditTemplate>
+                    <SfDropDownList TItem="tbjm" TValue="int" DataSource="@Jm"
+                                    @bind-Value="@((context as tbtowar).FJmNavigation.IDJm)">
+                        <DropDownListFieldSettings Text="Jm" Value="IDJm">
+                        </DropDownListFieldSettings>
+                    </SfDropDownList>
+                </EditTemplate>
+            </GridColumn>
+           </GridColumns>
+    </SfGrid>
+</div>
+
+
+@code
+{
+    IGrid Mygrid { get; set; }
+    object GridDataSource { get; set; }
+    IEnumerable<tbtowar> Towar;
+    IEnumerable<tbjm> Jm;
+
+    protected override void OnInitialized()
+    {
+
+        Towar= (TowarService.GetTbtowar()).ToList();
+        Towar = mczeContext.tbtowar.Include(n => n.FJmNavigation);
+        Jm = (JmService.GetTbjm()).ToList();
+    }
+
+    public void ActionBeginHandler(ActionEventArgs<tbtowar> Args)
+    {
+        //Will be triggered when CRUD action is initiated
+        if (Args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            if (Args.Action == "Add")
+            {
+                // Insert the changes into your database here.
+               TowarService.InsertTowar(Args.Data);
+            }
+        }
+
+        if (Args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            if (Args.Action == "Edit")
+            {
+                //Update the changes into your database here.
+                TowarService.UpdateTowar(Args.Data.IDTowar, Args.Data);
+            }
+        }
+
+        if (Args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Delete))
+        {
+            //Remove the record from your database
+           TowarService.DeleteTowar(Args.Data.IDTowar);
+        }
+    }
+    public void ActionCompleteHandler(ActionEventArgs<tbtowar> Args)
+    {
+        //will be triggered when CRUD action is complete.
+        if (Args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
+        {
+            Towar = TowarService.GetTbtowar(); //to fetch the updated data from db to Grid
+        }
+    }
+}
